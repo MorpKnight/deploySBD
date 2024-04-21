@@ -6,5 +6,5 @@ COPY --chown=node:node package*.json ./
 RUN npm install
 COPY --chown=node:node . .
 
-EXPOSE 6084
+EXPOSE 6049
 CMD ["node", "server.js"]
