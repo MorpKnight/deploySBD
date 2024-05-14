@@ -69,6 +69,49 @@ async function deleteEvent(req, res) {
     }
 };
 
+async function postBulk(req, res) {
+    const { events } = req.body;
+    try {
+        const values = events.map(event => {
+            const { title, description, year, period, month, day, country, city } = event;
+            return [title, description, year, period, month, day, country, city];
+        });
+        const result = await pool.query(
+            `insert into ${tableName} (title, description, year, period, month, day, country, city) values 
+            ${values.map((_, index) => `($${index * 8 + 1}, $${index * 8 + 2}, $${index * 8 + 3}, $${index * 8 + 4}, $${index * 8 + 5}, $${index * 8 + 6}, $${index * 8 + 7}, $${index * 8 + 8})`).join(",")}
+            returning *`,
+            values.flat()
+        );
+        res.status(201).json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+async function getCountry(req, res) {
+    const { country } = req.params;
+    try {
+        const result = await pool.query(`select * from ${tableName} where country = $1`, [country]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+
+}
+
+async function getPaginated(req, res){
+    const { page, pageSize } = req.params;
+    try {
+        const result = await pool.query(`select * from ${tableName} limit $1 offset $2`, [pageSize, (page - 1) * pageSize]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
 module.exports = {
     addEvent,
     getAllEvents,
